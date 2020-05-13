@@ -5,7 +5,7 @@ import json
 import requests
 from functools import lru_cache
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Union
 
 
 # reverses a dict's keys and values
@@ -47,7 +47,7 @@ def get_country_codes() -> dict:
 
 
 @lru_cache(maxsize=32)
-def get_city_id(city: str) -> int or str:
+def get_city_id(city: str) -> Union[str, int]:
     """Retrieves the id for a given city or city + country pair.
 
     Parameters
@@ -64,27 +64,25 @@ def get_city_id(city: str) -> int or str:
     """
     cities = get_cities()
 
-    found_cities = [_city for _city in cities if _city['name'].lower() == city.lower()]
+    found_cities = \
+        [_city for _city in cities if _city['name'].lower() == city.lower()]
+
+    get_city_id_by_name = lambda: \
+        [_city['id'] for _city in cities if _city['name'].lower() == city.lower()]
 
     if len(found_cities) < 1:
         return f'\nError: the city of {city} has not been found!\n'
     elif len(found_cities) == 1:
-        for _city in cities:
-            if _city['name'].lower() == city.lower():
-                city_id = _city['id']
+        city_id = get_city_id_by_name()[0]
     elif len(found_cities) > 1:
         found_countries = [_city['country'] for _city in found_cities]
-
         if len(set(found_countries)) == 1:
-            for _city in cities:
-                if _city['name'].lower() == city.lower():
-                    city_id = _city['id']
+            city_id = get_city_id_by_name()[0]
         elif len(set(found_countries)) > 1:
             country = click.prompt(
                 f'\nMultiple cities of {city} have been found.\n'
                 'Please specify a country name or 2-letter code '
                 'as defined in ISO-3166-1', type=str)
-
             country_codes = reverse_dict(get_country_codes()) \
                 if len(country) > 2 else get_country_codes()
             country_codes_lowered = lower_dict(country_codes)
