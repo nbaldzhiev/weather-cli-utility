@@ -3,8 +3,9 @@ import os
 import click
 import json
 import requests
+import time
+from operator import add
 from functools import lru_cache
-from datetime import datetime
 from typing import List, Dict, Union
 
 
@@ -145,7 +146,10 @@ def call_api(url: str) -> str or dict:
     str
         An error message in the case of an unsuccessful request.
     """
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+    except:
+        return 'Error: call to the API service failed.'
     if response.status_code != 200:
         return 'Error: unsuccessful call to the API service.'
     return json.loads(response.content)
@@ -154,28 +158,37 @@ def call_api(url: str) -> str or dict:
 @click.command()
 @click.argument('city')
 @click.option('-u', '--units',
-              help='[=metric][=imperial].', default='metric')
+              help='[=metric, default][=imperial]', default='metric')
+@click.option('-tf', '--time-format',
+              help='[=12][=24, default]', default=24)
 @click.option('-temp', '--temperature',
               help='Show current temperature.', is_flag=True)
 @click.option('-feels', '--feels-like',
               help='Show current feels-like temperature.', is_flag=True)
+@click.option('-mood', '--weather-mood',
+              help='Show current weather mood.', is_flag=True)
 @click.option('-min', '--min-temperature',
               help='Show current minimum temperature.', is_flag=True)
 @click.option('-max', '--max-temperature',
               help='Show current maximum temperature.', is_flag=True)
+@click.option('--cloudiness',
+              help='Show current cloudiness.', is_flag=True)
 @click.option('--pressure',
               help='Show current pressure level.', is_flag=True)
 @click.option('--humidity',
               help='Show current humidity level.', is_flag=True)
+@click.option('--wind-speed',
+              help='Show current wind speed.', is_flag=True)
 @click.option('-sunrise', '--sunrise-time',
               help='Show time of sunrise (city local time).', is_flag=True)
 @click.option('-sunset', '--sunset-time',
               help='Show time of sunset (city local time).', is_flag=True)
 @click.option('-v', '--verbose',
               help='Show detailed weather information.', is_flag=True)
-def weather_in(city: str, units, temperature, feels_like, min_temperature,
-               max_temperature, pressure, humidity, sunrise_time,
-               sunset_time, verbose):
+def weather_in(city: str, units, time_format, temperature, feels_like,
+               weather_mood, min_temperature, max_temperature, cloudiness,
+               pressure, humidity, wind_speed, sunrise_time, sunset_time,
+               verbose):
     """Shows the current weather in a given city in the world."""
 
     city_id = get_city_id(city)
@@ -190,43 +203,59 @@ def weather_in(city: str, units, temperature, feels_like, min_temperature,
         click.echo(result)
         return
 
+    speed = 'meter/sec' if units == 'metric' else 'miles/hour'
+    degrees = 'Celsius' if units == 'metric' else 'Fahrenheit'
+    tformat = '%H:%M:%S' if time_format == 24 else '%I:%M:%S %p'
+
     output = f'\nThe requested current weather data (in the {units} system) ' \
              f'for {city} is as follows:\n\t'
 
-    if not any([temperature, feels_like, min_temperature, max_temperature,
-                pressure, humidity, sunrise_time, sunset_time, verbose]):
-        temperature = feels_like = min_temperature = max_temperature = ' '
+    if not any([temperature, feels_like, weather_mood, min_temperature,
+                max_temperature, cloudiness, pressure, humidity, wind_speed,
+                sunrise_time, cloudiness, verbose]):
+        temperature = feels_like = weather_mood = min_temperature = \
+            max_temperature = ' '
     elif verbose:
-        temperature = feels_like = min_temperature = max_temperature = \
-            pressure = humidity = sunrise_time = sunset_time = ' '
+        temperature = feels_like = weather_mood = min_temperature = \
+            max_temperature = cloudiness = pressure = humidity = \
+            wind_speed = sunrise_time = sunset_time = ' '
 
     if temperature:
         output += \
-            f"Current temperature is {result['main']['temp']}.\n\t"
+            f"Current temperature is {result['main']['temp']} {degrees}.\n\t"
     if feels_like:
         output += \
-            f"Feels-like temperature is {result['main']['feels_like']}.\n\t"
+            f"Feels-like temperature is {result['main']['feels_like']} {degrees}.\n\t"
+    if weather_mood:
+        output += \
+            f"Weather mood is {result['weather'][0]['main']}.\n\t"
     if min_temperature:
         output += \
-            f"Minimum temperature is {result['main']['temp_min']}.\n\t"
+            f"Minimum temperature is {result['main']['temp_min']} {degrees}.\n\t"
     if max_temperature:
         output += \
-            f"Maximum temperature is {result['main']['temp_max']}.\n\t"
+            f"Maximum temperature is {result['main']['temp_max']} {degrees}.\n\t"
+    if cloudiness:
+        output += \
+            f"Cloudiness is {result['clouds']['all']}%.\n\t"
     if pressure:
         output += \
-            f"Pressure is {result['main']['pressure']}.\n\t"
+            f"Pressure is {result['main']['pressure']}hPa.\n\t"
     if humidity:
         output += \
-            f"Humidity is {result['main']['humidity']}.\n\t"
+            f"Humidity is {result['main']['humidity']}%.\n\t"
+    if wind_speed:
+        output += \
+            f"Wind speed is {result['wind']['speed']} {speed}.\n\t"
     if sunrise_time:
-        _sunrise_epoch = result['sys']['sunrise']
+        _sunrise_epoch = add(result['sys']['sunrise'], result['timezone'])
         _sunrise_time = \
-            datetime.fromtimestamp(_sunrise_epoch).strftime("%H:%M:%S")
+            time.strftime(tformat, time.gmtime(_sunrise_epoch))
         output += f"Sunrise is at {_sunrise_time}.\n\t"
     if sunset_time:
-        _sunset_epoch = result['sys']['sunset']
+        _sunset_epoch = add(result['sys']['sunset'], result['timezone'])
         _sunset_time = \
-            datetime.fromtimestamp(_sunset_epoch).strftime("%H:%M:%S")
+            time.strftime(tformat, time.gmtime(_sunset_epoch))
         output += f"Sunset is at {_sunset_time}.\n\t"
 
     click.echo(output)
