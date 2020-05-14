@@ -6,7 +6,7 @@ import requests
 import time
 from operator import add
 from functools import lru_cache
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Tuple
 
 
 # reverses a dict's keys and values
@@ -131,7 +131,7 @@ def build_url(city_id: int, units: str = 'metric') -> str:
     return base_url + app_id_param + city_id_param + units_param
 
 
-def call_api(url: str) -> str or dict:
+def call_api(url: str) -> Union[str, dict]:
     """Calls the current weather API.
 
     Parameters
@@ -149,10 +149,32 @@ def call_api(url: str) -> str or dict:
     try:
         response = requests.get(url)
     except:
-        return 'Error: call to the API service failed.'
+        return '\nError: call to the API service failed.'
+    content = json.loads(response.content)
     if response.status_code != 200:
-        return 'Error: unsuccessful call to the API service.'
-    return json.loads(response.content)
+        return '\nError: unsuccessful call to the API service:\n\t' \
+               f'{content["cod"]}, {content["message"]}.\n'
+    return content
+
+
+def set_output(vars_msgs: List[Tuple[bool, str]]) -> list:
+    '''Creates a list with output messages depending on which options
+    are set.
+
+    Parameters
+    ----------
+    vars_msgs : List[Tuple[bool, str]]
+        Each tuple contains a bool, indicating if an option has been set
+        and a string, indicating the output message if the option is set
+
+    Returns
+    -------
+    msgs : list
+        Contains all the messages corresponding to the options which
+        have been set.
+    '''
+    msgs = [elem[1] for elem in vars_msgs if elem[0]]
+    return msgs
 
 
 @click.command()
@@ -190,29 +212,25 @@ def weather_in(city: str, units, time_format, temperature, feels_like,
                pressure, humidity, wind_speed, sunrise_time, sunset_time,
                verbose):
     """Shows the current weather in a given city in the world."""
-
     city_id = get_city_id(city)
     if type(city_id) is str:
         click.echo(city_id)
-        return
+        return city_id
 
     api_url = build_url(city_id, units)
     result = call_api(api_url)
 
     if type(result) is str:
         click.echo(result)
-        return
+        return result
 
     speed = 'meter/sec' if units == 'metric' else 'miles/hour'
     degrees = 'Celsius' if units == 'metric' else 'Fahrenheit'
     tformat = '%H:%M:%S' if time_format == 24 else '%I:%M:%S %p'
 
-    output = f'\nThe requested current weather data (in the {units} system) ' \
-             f'for {city} is as follows:\n\t'
-
     if not any([temperature, feels_like, weather_mood, min_temperature,
                 max_temperature, cloudiness, pressure, humidity, wind_speed,
-                sunrise_time, cloudiness, verbose]):
+                sunrise_time, sunset_time, cloudiness, verbose]):
         temperature = feels_like = weather_mood = min_temperature = \
             max_temperature = ' '
     elif verbose:
@@ -220,45 +238,29 @@ def weather_in(city: str, units, time_format, temperature, feels_like,
             max_temperature = cloudiness = pressure = humidity = \
             wind_speed = sunrise_time = sunset_time = ' '
 
-    if temperature:
-        output += \
-            f"Current temperature is {result['main']['temp']} {degrees}.\n\t"
-    if feels_like:
-        output += \
-            f"Feels-like temperature is {result['main']['feels_like']} {degrees}.\n\t"
-    if weather_mood:
-        output += \
-            f"Weather mood is {result['weather'][0]['main']}.\n\t"
-    if min_temperature:
-        output += \
-            f"Minimum temperature is {result['main']['temp_min']} {degrees}.\n\t"
-    if max_temperature:
-        output += \
-            f"Maximum temperature is {result['main']['temp_max']} {degrees}.\n\t"
-    if cloudiness:
-        output += \
-            f"Cloudiness is {result['clouds']['all']}%.\n\t"
-    if pressure:
-        output += \
-            f"Pressure is {result['main']['pressure']}hPa.\n\t"
-    if humidity:
-        output += \
-            f"Humidity is {result['main']['humidity']}%.\n\t"
-    if wind_speed:
-        output += \
-            f"Wind speed is {result['wind']['speed']} {speed}.\n\t"
-    if sunrise_time:
-        _sunrise_epoch = add(result['sys']['sunrise'], result['timezone'])
-        _sunrise_time = \
-            time.strftime(tformat, time.gmtime(_sunrise_epoch))
-        output += f"Sunrise is at {_sunrise_time}.\n\t"
-    if sunset_time:
-        _sunset_epoch = add(result['sys']['sunset'], result['timezone'])
-        _sunset_time = \
-            time.strftime(tformat, time.gmtime(_sunset_epoch))
-        output += f"Sunset is at {_sunset_time}.\n\t"
+    _sunrise_epoch = add(result['sys']['sunrise'], result['timezone'])
+    _sunrise_time = \
+        time.strftime(tformat, time.gmtime(_sunrise_epoch))
 
-    click.echo(output)
+    _sunset_epoch = add(result['sys']['sunset'], result['timezone'])
+    _sunset_time = \
+        time.strftime(tformat, time.gmtime(_sunset_epoch))
+
+    messages = set_output(
+        [(temperature, f"Current temperature is {result['main']['temp']} {degrees}.\n\t"),
+        (feels_like, f"Feels-like temperature is {result['main']['feels_like']} {degrees}.\n\t"),
+        (weather_mood, f"Weather mood is {result['weather'][0]['main']}.\n\t"),
+        (min_temperature, f"Minimum temperature is {result['main']['temp_min']} {degrees}.\n\t"),
+        (max_temperature, f"Maximum temperature is {result['main']['temp_max']} {degrees}.\n\t"),
+        (cloudiness, f"Cloudiness is {result['clouds']['all']}%.\n\t"),
+        (pressure, f"Pressure is {result['main']['pressure']}hPa.\n\t"),
+        (humidity, f"Humidity is {result['main']['humidity']}%.\n\t"),
+        (wind_speed, f"Wind speed is {result['wind']['speed']} {speed}.\n\t"),
+        (sunrise_time, f"Sunrise is at {_sunrise_time}.\n\t"),
+        (sunset_time, f"Sunset is at {_sunset_time}.\n\t")])
+
+    click.echo(f'\nThe requested current weather data ' 
+               f'for {city} is as follows:\n\t' + ''.join(messages))
 
 
 if __name__ == '__main__':
