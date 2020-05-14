@@ -6,6 +6,6 @@ in a given city in the world. It is based on Python and `click`_.
 
 .. _click: https://github.com/pallets/click
 
- .. image:: https://github.com/nbaldzhiev/weather-cli-utility/blob/master/docs/interrogate_badge.svg
-   :target: https://github.com/econchick/interrogate
-   :alt: Documentation Coverage
+.. image:: https://github.com/nbaldzhiev/weather-cli-utility/blob/master/docs/interrogate_badge.svg
+ :target: https://github.com/econchick/interrogate
+ :alt: Documentation Coverage
