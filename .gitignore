@@ -3,3 +3,7 @@ venv/
 
 .env
 .env.leave
+
+__pycache__/
+
+test_cases.text

@@ -10,11 +10,10 @@ from typing import List, Dict, Union, Tuple
 
 
 # reverses a dict's keys and values
-reverse_dict = lambda _dict: dict(map(reversed, _dict.items()))
-
+reverse_dict = lambda d: dict(map(reversed, d.items()))
 
 # converts a dict's keys and values to lowercase
-lower_dict = lambda _dict: {k.lower(): v.lower() for k, v in _dict.items()}
+lower_dict = lambda d: {k.lower(): v.lower() for k, v in d.items()}
 
 
 @lru_cache(maxsize=1)
@@ -40,14 +39,13 @@ def get_country_codes() -> dict:
     -------
     country_codes : dict
         A dict with 2-letter country codes as keys and country names
-        as values. Country names and 2-letter codes as based on ISO-3166-1.
+            as values. Country names and 2-letter codes as based on ISO-3166-1.
     """
     with open('country_codes.json', 'r') as fp:
         country_codes = json.load(fp)
     return country_codes
 
 
-@lru_cache(maxsize=32)
 def get_city_id(city: str) -> Union[str, int]:
     """Retrieves the id for a given city or city + country pair.
 
@@ -247,17 +245,17 @@ def weather_in(city: str, units, time_format, temperature, feels_like,
         time.strftime(tformat, time.gmtime(_sunset_epoch))
 
     messages = set_output(
-        [(temperature, f"Current temperature is {result['main']['temp']} {degrees}.\n\t"),
-        (feels_like, f"Feels-like temperature is {result['main']['feels_like']} {degrees}.\n\t"),
-        (weather_mood, f"Weather mood is {result['weather'][0]['main']}.\n\t"),
-        (min_temperature, f"Minimum temperature is {result['main']['temp_min']} {degrees}.\n\t"),
-        (max_temperature, f"Maximum temperature is {result['main']['temp_max']} {degrees}.\n\t"),
-        (cloudiness, f"Cloudiness is {result['clouds']['all']}%.\n\t"),
-        (pressure, f"Pressure is {result['main']['pressure']}hPa.\n\t"),
-        (humidity, f"Humidity is {result['main']['humidity']}%.\n\t"),
-        (wind_speed, f"Wind speed is {result['wind']['speed']} {speed}.\n\t"),
-        (sunrise_time, f"Sunrise is at {_sunrise_time}.\n\t"),
-        (sunset_time, f"Sunset is at {_sunset_time}.\n\t")])
+        [(temperature, fmsg(f"Current temperature is {result['main']['temp']} {degrees}.")),
+        (feels_like, fmsg(f"Feels-like temperature is {result['main']['feels_like']} {degrees}.")),
+        (weather_mood, fmsg(f"Weather mood is {result['weather'][0]['main']}.")),
+        (min_temperature, fmsg(f"Minimum temperature is {result['main']['temp_min']} {degrees}.")),
+        (max_temperature, fmsg(f"Maximum temperature is {result['main']['temp_max']} {degrees}.")),
+        (cloudiness, fmsg(f"Cloudiness is {result['clouds']['all']}%.")),
+        (pressure, fmsg(f"Pressure is {result['main']['pressure']}hPa.")),
+        (humidity, fmsg(f"Humidity is {result['main']['humidity']}%.")),
+        (wind_speed, fmsg(f"Wind speed is {result['wind']['speed']} {speed}.")),
+        (sunrise_time, fmsg(f"Sunrise is at {_sunrise_time}.")),
+        (sunset_time, fmsg(f"Sunset is at {_sunset_time}."))])
 
     click.echo(f'\nThe requested current weather data ' 
                f'for {city} is as follows:\n\t' + ''.join(messages))
