@@ -15,6 +15,9 @@ reverse_dict = lambda d: dict(map(reversed, d.items()))
 # converts a dict's keys and values to lowercase
 lower_dict = lambda d: {k.lower(): v.lower() for k, v in d.items()}
 
+# formats a command output message
+fmsg = lambda s: s + '\n\t'
+
 
 @lru_cache(maxsize=1)
 def get_cities() -> List[Dict]:
