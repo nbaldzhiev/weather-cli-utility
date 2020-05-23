@@ -1,12 +1,12 @@
-""""""
+"""Pytest unit tests of get_city_id function."""
 from typing import List, Tuple, Dict
 import io
 import pytest
 from weather_in import get_city_id
 
 
-def input_output_data(test_name: str) -> List[Tuple]:
-    """Input and output for the test functions."""
+def get_expected_data(test_name: str) -> List[Tuple]:
+    """Input and expected output for the test functions."""
     c_sc_pos_data = [
         ('Sofia', 727011), ('sofia', 727011),
         ('sOfIa', 727011), ('Gorna Oryahovitsa', 731233),
@@ -61,7 +61,7 @@ def input_output_data(test_name: str) -> List[Tuple]:
 
 @pytest.mark.positives
 @pytest.mark.parametrize("city_name, expected",
-                         input_output_data('c_sc_pos'))
+                         get_expected_data('c_sc_pos'))
 def test_city_in_single_country_pos(city_name: str, expected: int):
     """Tests get_city_id() with name of cities, which
     exist in only one country, and with name of cities with a typo,
@@ -71,7 +71,7 @@ def test_city_in_single_country_pos(city_name: str, expected: int):
 
 @pytest.mark.positives
 @pytest.mark.parametrize("city_name, country_name, expected",
-                         input_output_data('c_mc_pos'))
+                         get_expected_data('c_mc_pos'))
 def test_city_in_multiple_countries_pos(city_name:str , country_name: str,
                                         expected: int, monkeypatch):
     """Tests get_city_id() with name of cities, which exist in more than
@@ -86,7 +86,7 @@ def test_city_in_multiple_countries_pos(city_name:str , country_name: str,
 
 @pytest.mark.negatives
 @pytest.mark.parametrize("city_name, expected",
-                         input_output_data('c_sc_neg'))
+                         get_expected_data('c_sc_neg'))
 def test_city_in_single_country_neg(city_name: str, expected: str):
     """Tests get_city_id() with invalid city names."""
     assert get_city_id(city_name) == expected
@@ -94,7 +94,7 @@ def test_city_in_single_country_neg(city_name: str, expected: str):
 
 @pytest.mark.negatives
 @pytest.mark.parametrize("city_name, country_name, expected",
-                         input_output_data('c_mc_neg'))
+                         get_expected_data('c_mc_neg'))
 def test_city_in_multiple_countries_neg(city_name: str, country_name: str,
                                         expected: str, monkeypatch):
     """Tests get_city_id() with invalid country names."""

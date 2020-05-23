@@ -7,9 +7,11 @@ $ weather\_in
 (project is used for coding practice purposes and is in no way, shape, or form finished!)
 
 weather_in is a simple command-line interface (CLI) utility for checking current weather status
-in a given city in the world. It is based on Python 3.8 and `click`_.
+in a given city in the world. It is based on Python 3.8 and `click`_. The API service used for the
+current weather data is `OpenWeatherMap`_.
 
 .. _click: https://github.com/pallets/click
+.. _OpenWeatherMap: https://openweathermap.org/current
 
 Installing
 ----------
@@ -25,6 +27,9 @@ In order to avoid setting this alias each time, a .env file can be incorporated 
 `autoenv`_.
 
 .. _autoenv: https://github.com/inishchith/autoenv
+
+An OpenWeatherMap API key is required and it must be set as an environment variable named **KEY**.
+It can be obtained through a registration and a request for OpenWeatherMap's Current weather data API service (link is above).
 
 Example usage
 -------------
